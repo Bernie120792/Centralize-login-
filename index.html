@@ -6,244 +6,251 @@
 <title>Central Client Panel</title>
 
 <style>
-body{
-  margin:0;
-  font-family:Arial;
-  background:#0f172a;
-  color:white;
-  overflow:hidden;
+html,body{
+margin:0;
+padding:0;
+width:100%;
+height:100%;
+font-family:Arial;
+background:#0f172a;
+color:white;
 }
 
 /* LOGIN SCREEN */
 #loginScreen{
-  position:fixed;
-  width:100%;
-  height:100%;
-  display:flex;
-  justify-content:center;
-  align-items:center;
-  background:#0f172a;
-  z-index:10;
+position:fixed;
+top:0;
+left:0;
+width:100%;
+height:100%;
+display:flex;
+justify-content:center;
+align-items:center;
+background:#0f172a;
+z-index:10;
 }
 
 .container{
-  background:#1e293b;
-  padding:30px;
-  border-radius:12px;
-  width:90%;
-  max-width:400px;
-  text-align:center;
+background:#1e293b;
+padding:25px;
+border-radius:12px;
+width:85%;
+max-width:360px;
+text-align:center;
 }
 
 input{
-  width:70%;
-  padding:12px;
-  margin:10px 0;
-  border:none;
-  border-radius:6px;
+width:75%;
+padding:10px;
+margin:8px 0;
+border:none;
+border-radius:6px;
+font-size:15px;
 }
 
 button{
-  width:80%;
-  padding:12px;
-  border:none;
-  border-radius:6px;
-  background:#3b82f6;
-  color:white;
-  font-size:16px;
-  cursor:pointer;
+width:80%;
+padding:10px;
+border:none;
+border-radius:6px;
+background:#3b82f6;
+color:white;
+font-size:15px;
+cursor:pointer;
 }
 
 .error{
-  color:#f87171;
-  margin-top:10px;
+color:#f87171;
+margin-top:8px;
+font-size:14px;
 }
 
-/* CLIENT ID FLOATING CENTER TOP */
+/* CLIENT ID */
 #clientName{
-  position:fixed;
-  top:5px;
-  left:50%;
-  transform:translateX(-50%);
-  font-size:16px;
-  background:rgba(0,0,0,0.5);
-  padding:4px 10px;
-  border-radius:8px;
-  z-index:20;
+position:fixed;
+top:5px;
+left:50%;
+transform:translateX(-50%);
+font-size:14px;
+background:rgba(0,0,0,0.5);
+padding:4px 10px;
+border-radius:8px;
+z-index:20;
 }
 
-/* TIMER DISPLAY FLOATING CENTER TOP UNDER CLIENT ID */
-#timer{
-  position:fixed;
-  top:30px;
-  left:50%;
-  transform:translateX(-50%);
-  font-size:12px;
-  color:#fbbf24;
-  background:rgba(0,0,0,0.5);
-  padding:2px 8px;
-  border-radius:6px;
-  z-index:20;
+/* LOGOUT BUTTON */
+#logoutBtn{
+position:fixed;
+top:5px;
+right:8px;
+background:#ef4444;
+border:none;
+padding:5px 10px;
+border-radius:6px;
+color:white;
+font-size:13px;
+z-index:20;
+display:none;
 }
 
-/* IFRAME FULL SCREEN */
+/* IFRAME */
 #mainFrame{
-  width:100%;
-  height:100vh;
-  border:none;
-  display:none;
+position:absolute;
+top:0;
+left:0;
+width:100%;
+height:100%;
+border:none;
+display:none;
 }
 </style>
 </head>
 
 <body>
 
-<!-- LOGIN -->
 <div id="loginScreen">
-  <div class="container">
-    <h2>Central Login</h2>
-    <input type="text" id="username" placeholder="Username">
-    <input type="password" id="mpin" placeholder="MPIN">
-    <button onclick="login()">Login</button>
-    <div class="error" id="error"></div>
-  </div>
+<div class="container">
+<h3>Central Login</h3>
+
+<input id="username" placeholder="Username">
+
+<input id="mpin" type="password" placeholder="MPIN">
+
+<button id="loginBtn">Login</button>
+
+<div id="error" class="error"></div>
+</div>
 </div>
 
-<!-- CLIENT ID & TIMER -->
 <div id="clientName"></div>
-<div id="timer">Logout in: 01:00</div>
 
-<!-- CLIENT PAGE -->
+<button id="logoutBtn">Logout</button>
+
 <iframe id="mainFrame"></iframe>
 
 <script>
+
 let clients=[];
-let countdownInterval;
-let remainingSeconds = 60; // 1 minute countdown
-let isTouching = false;
-let activityDetected = false;
 
-/* LOAD CLIENTS FROM GOOGLE SCRIPT */
+/* LOAD CLIENTS */
 function loadClients(){
-  const scriptURL="https://script.google.com/macros/s/AKfycbwvFSK_-3K0ZcomEP1Hf8Cf92fbjU2hM3Af7EJBH90L1QoJ8ceYW9t8vksMmnahzKKj/exec?callback=clientsLoaded";
-  const script=document.createElement("script");
-  script.src=scriptURL;
-  document.body.appendChild(script);
+
+var script=document.createElement("script");
+
+script.src="https://script.google.com/macros/s/AKfycbwvFSK_-3K0ZcomEP1Hf8Cf92fbjU2hM3Af7EJBH90L1QoJ8ceYW9t8vksMmnahzKKj/exec?callback=clientsLoaded";
+
+document.body.appendChild(script);
+
 }
 
-/* CALLBACK FROM GOOGLE SCRIPT */
+/* CALLBACK */
 function clientsLoaded(data){
-  clients=data.map(c=>({
-    username:c.username.toString().trim(),
-    mpin:c.mpin.toString().trim(),
-    url:c.url.toString().trim()
-  }));
+
+clients=data.map(function(c){
+
+return{
+username:String(c.username).trim(),
+mpin:String(c.mpin).trim(),
+url:String(c.url).trim()
 }
 
-/* LOGIN FUNCTION */
-function login(){
-  const user=document.getElementById("username").value.trim();
-  const pin=document.getElementById("mpin").value.trim();
-  const errorDiv=document.getElementById("error");
+})
 
-  const client=clients.find(c=>c.username===user && c.mpin===pin);
-
-  if(client){
-    localStorage.setItem("central_session","active");
-    localStorage.setItem("client_url",client.url);
-    localStorage.setItem("client_id",client.username);
-    openClient(client.url, client.username);
-    errorDiv.textContent="";
-  }else{
-    errorDiv.textContent="Invalid Username or MPIN";
-  }
 }
 
-/* OPEN CLIENT FUNCTION */
-function openClient(url, id){
-  document.getElementById("loginScreen").style.display="none";
-  document.getElementById("mainFrame").style.display="block";
-  document.getElementById("mainFrame").src=url;
-  document.getElementById("clientName").innerText="Client ID: "+id;
-  startIdleTimer();
+/* LOGIN */
+
+document.getElementById("loginBtn").addEventListener("click",function(){
+
+var user=document.getElementById("username").value.trim();
+
+var pin=document.getElementById("mpin").value.trim();
+
+var errorDiv=document.getElementById("error");
+
+var client=clients.find(function(c){
+
+return c.username===user && c.mpin===pin
+
+})
+
+if(client){
+
+localStorage.setItem("central_session","active");
+
+localStorage.setItem("client_url",client.url);
+
+localStorage.setItem("client_id",client.username);
+
+openClient(client.url,client.username);
+
+errorDiv.innerText="";
+
+}else{
+
+errorDiv.innerText="Invalid Username or MPIN";
+
 }
 
-/* LOGOUT FUNCTION */
-function logout(){
-  localStorage.clear();
-  document.getElementById("mainFrame").src="";
-  document.getElementById("mainFrame").style.display="none";
-  document.getElementById("loginScreen").style.display="flex";
-  stopIdleTimer();
-  document.getElementById("clientName").innerText="";
-  document.getElementById("timer").innerText="Logout in: 01:00";
+})
+
+/* OPEN CLIENT */
+
+function openClient(url,id){
+
+document.getElementById("loginScreen").style.display="none";
+
+var frame=document.getElementById("mainFrame");
+
+frame.style.display="block";
+
+frame.src=url;
+
+document.getElementById("clientName").innerText="Client: "+id;
+
+document.getElementById("logoutBtn").style.display="block";
+
 }
 
-/* AUTO RESTORE SESSION */
+/* LOGOUT */
+
+document.getElementById("logoutBtn").addEventListener("click",function(){
+
+localStorage.clear();
+
+document.getElementById("mainFrame").src="";
+
+document.getElementById("mainFrame").style.display="none";
+
+document.getElementById("loginScreen").style.display="flex";
+
+document.getElementById("clientName").innerText="";
+
+document.getElementById("logoutBtn").style.display="none";
+
+})
+
+/* RESTORE SESSION */
+
 window.onload=function(){
-  loadClients();
-  const session=localStorage.getItem("central_session");
-  const url=localStorage.getItem("client_url");
-  const id=localStorage.getItem("client_id");
 
-  if(session==="active" && url){
-    openClient(url,id);
-  }
+loadClients();
+
+var session=localStorage.getItem("central_session");
+
+var url=localStorage.getItem("client_url");
+
+var id=localStorage.getItem("client_id");
+
+if(session==="active" && url){
+
+openClient(url,id);
+
 }
 
-/* START TIMER */
-function startIdleTimer(){
-  remainingSeconds = 60;
-  updateTimerDisplay();
-  clearInterval(countdownInterval);
-
-  countdownInterval = setInterval(()=>{
-    if(isTouching){
-      // do nothing, pause
-    } else if(activityDetected){
-      // reset to 1 minute on any activity
-      remainingSeconds = 60;
-      updateTimerDisplay();
-      activityDetected = false;
-    } else {
-      // no activity and not touching → count down
-      remainingSeconds--;
-      updateTimerDisplay();
-      if(remainingSeconds <= 0){
-        logout();
-      }
-    }
-  },1000);
 }
 
-/* MARK ACTIVITY */
-function activity(){
-  activityDetected = true;
-}
-
-/* LISTEN FOR ACTIVITY */
-document.onmousemove = activity;
-document.onkeypress = activity;
-document.onclick = activity;
-document.addEventListener("touchstart", ()=>{ isTouching = true; });
-document.addEventListener("touchend", ()=>{ isTouching = false; activity(); });
-document.addEventListener("touchcancel", ()=>{ isTouching = false; activity(); });
-
-/* FOCUS/BLUR TO HANDLE IFRAME */
-window.addEventListener("blur", ()=>{ isTouching = true; });
-window.addEventListener("focus", ()=>{ isTouching = false; activity(); });
-
-/* UPDATE TIMER DISPLAY */
-function updateTimerDisplay(){
-  const minutes = String(Math.floor(remainingSeconds/60)).padStart(2,'0');
-  const seconds = String(remainingSeconds%60).padStart(2,'0');
-  document.getElementById("timer").innerText = `Logout in: ${minutes}:${seconds}`;
-}
-
-/* STOP TIMER */
-function stopIdleTimer(){
-  clearInterval(countdownInterval);
-}
 </script>
+
 </body>
 </html>
